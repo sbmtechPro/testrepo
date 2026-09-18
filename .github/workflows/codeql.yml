@@ -1,0 +1,107 @@
+name: CodeQL
+
+on:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  detect_languages:
+    name: Detect supported languages
+    runs-on: ubuntu-latest
+    outputs:
+      js_ts: ${{ steps.detect.outputs.js_ts }}
+      python: ${{ steps.detect.outputs.python }}
+      java_kotlin: ${{ steps.detect.outputs.java_kotlin }}
+      go: ${{ steps.detect.outputs.go }}
+      csharp: ${{ steps.detect.outputs.csharp }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Detect language files
+        id: detect
+        shell: bash
+        run: |
+          files="$(git ls-files)"
+
+          js_ts=false
+          python=false
+          java_kotlin=false
+          go=false
+          csharp=false
+
+          if printf '%s\n' "$files" | grep -Eq '\.(js|jsx|mjs|cjs|ts|tsx)$'; then
+            js_ts=true
+          fi
+
+          if printf '%s\n' "$files" | grep -Eq '\.py$'; then
+            python=true
+          fi
+
+          if printf '%s\n' "$files" | grep -Eq '\.(java|kt|kts)$'; then
+            java_kotlin=true
+          fi
+
+          if printf '%s\n' "$files" | grep -Eq '\.go$'; then
+            go=true
+          fi
+
+          if printf '%s\n' "$files" | grep -Eq '\.cs$'; then
+            csharp=true
+          fi
+
+          echo "js_ts=$js_ts" >> "$GITHUB_OUTPUT"
+          echo "python=$python" >> "$GITHUB_OUTPUT"
+          echo "java_kotlin=$java_kotlin" >> "$GITHUB_OUTPUT"
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "csharp=$csharp" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: detect_languages
+    if: >
+      (matrix.language == 'javascript-typescript' && needs.detect_languages.outputs.js_ts == 'true') ||
+      (matrix.language == 'python' && needs.detect_languages.outputs.python == 'true') ||
+      (matrix.language == 'java-kotlin' && needs.detect_languages.outputs.java_kotlin == 'true') ||
+      (matrix.language == 'go' && needs.detect_languages.outputs.go == 'true') ||
+      (matrix.language == 'csharp' && needs.detect_languages.outputs.csharp == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: java-kotlin
+            build-mode: autobuild
+          - language: go
+            build-mode: autobuild
+          - language: csharp
+            build-mode: autobuild
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Autobuild
+        if: matrix.build-mode == 'autobuild'
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
