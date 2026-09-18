@@ -31,17 +31,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Detect language files
+        id: detect
+        run: |
+          case "${{ matrix.language }}" in
+            javascript-typescript)
+              patterns=("*.js" "*.jsx" "*.mjs" "*.cjs" "*.ts" "*.tsx")
+              ;;
+            python)
+              patterns=("*.py")
+              ;;
+            java-kotlin)
+              patterns=("*.java" "*.kt" "*.kts")
+              ;;
+            go)
+              patterns=("*.go")
+              ;;
+            csharp)
+              patterns=("*.cs")
+              ;;
+          esac
+
+          present=false
+          for pattern in "${patterns[@]}"; do
+            if find . -path ./.git -prune -o -type f -name "$pattern" -print | grep -q .; then
+              present=true
+              break
+            fi
+          done
+
+          echo "present=$present" >> "$GITHUB_OUTPUT"
+
+      - name: Skip missing language
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No ${{ matrix.language }} files detected; skipping CodeQL analysis."
+
       - name: Initialize CodeQL
+        if: steps.detect.outputs.present == 'true'
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
-        if: matrix.build-mode == 'autobuild'
+        if: steps.detect.outputs.present == 'true' && matrix.build-mode == 'autobuild'
         uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL analysis
+        if: steps.detect.outputs.present == 'true'
         uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}
