@@ -33,6 +33,7 @@ jobs:
 
       - name: Detect language files
         id: detect
+        shell: bash
         run: |
           case "${{ matrix.language }}" in
             javascript-typescript)
