@@ -1,0 +1,4 @@
+name: Repository CodeQL configuration
+
+queries:
+  - uses: security-extended
