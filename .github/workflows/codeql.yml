@@ -36,29 +36,26 @@ jobs:
         run: |
           case "${{ matrix.language }}" in
             javascript-typescript)
-              patterns=("*.js" "*.jsx" "*.mjs" "*.cjs" "*.ts" "*.tsx")
+              find_args=(-name "*.js" -o -name "*.jsx" -o -name "*.mjs" -o -name "*.cjs" -o -name "*.ts" -o -name "*.tsx")
               ;;
             python)
-              patterns=("*.py")
+              find_args=(-name "*.py")
               ;;
             java-kotlin)
-              patterns=("*.java" "*.kt" "*.kts")
+              find_args=(-name "*.java" -o -name "*.kt" -o -name "*.kts")
               ;;
             go)
-              patterns=("*.go")
+              find_args=(-name "*.go")
               ;;
             csharp)
-              patterns=("*.cs")
+              find_args=(-name "*.cs")
               ;;
           esac
 
           present=false
-          for pattern in "${patterns[@]}"; do
-            if find . -path ./.git -prune -o -type f -name "$pattern" -print | grep -q .; then
-              present=true
-              break
-            fi
-          done
+          if find . -path ./.git -prune -o -type f \( "${find_args[@]}" \) -print | grep -q .; then
+            present=true
+          fi
 
           echo "present=$present" >> "$GITHUB_OUTPUT"
 
