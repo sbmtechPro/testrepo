@@ -1,7 +1,12 @@
 name: CodeQL
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
+  schedule:
+    - cron: '24 23 * * 6'
 
 permissions:
   actions: read
