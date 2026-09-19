@@ -18,6 +18,7 @@ jobs:
     name: Detect supported languages
     runs-on: ubuntu-latest
     outputs:
+      actions: 'true'
       js_ts: ${{ steps.detect.outputs.js_ts }}
       python: ${{ steps.detect.outputs.python }}
       java_kotlin: ${{ steps.detect.outputs.java_kotlin }}
@@ -70,6 +71,7 @@ jobs:
     name: Analyze (${{ matrix.language }})
     needs: detect_languages
     if: >
+      (matrix.language == 'actions' && needs.detect_languages.outputs.actions == 'true') ||
       (matrix.language == 'javascript-typescript' && needs.detect_languages.outputs.js_ts == 'true') ||
       (matrix.language == 'python' && needs.detect_languages.outputs.python == 'true') ||
       (matrix.language == 'java-kotlin' && needs.detect_languages.outputs.java_kotlin == 'true') ||
@@ -80,6 +82,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - language: actions
+            build-mode: none
           - language: javascript-typescript
             build-mode: none
           - language: python
