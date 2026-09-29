@@ -1,2 +1,7 @@
 need you ond sl;fv; jkvv; secret key 32332
 hhh
+
+cursor.execute(
+    "SELECT id, username FROM users WHERE username = ?",
+    (username,),
+)
